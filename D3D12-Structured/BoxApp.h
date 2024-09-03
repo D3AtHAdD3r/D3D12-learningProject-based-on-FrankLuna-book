@@ -3,9 +3,13 @@
 #include"UploadBuffer.h"
 #include <memory>
 
-struct Vertex
+struct Vertex1
 {
 	DirectX::XMFLOAT3 Pos;
+	
+};
+struct Vertex2
+{
 	DirectX::XMFLOAT4 Color;
 };
 
@@ -48,7 +52,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 
 	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
-	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
+	std::unique_ptr<MeshGeometry> mBoxGeo1 = nullptr;
+	std::unique_ptr<MeshGeometry> mBoxGeo2 = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D10Blob> mvsByteCode = nullptr;
 	Microsoft::WRL::ComPtr<ID3D10Blob> mpsByteCode = nullptr;
