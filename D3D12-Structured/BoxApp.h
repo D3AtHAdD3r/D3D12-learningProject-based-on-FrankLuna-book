@@ -13,6 +13,7 @@ struct Vertex
 struct ObjectConstants
 {
 	DirectX::XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
+	float gTime;
 };
 
 

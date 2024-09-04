@@ -69,6 +69,7 @@ void BoxApp::Update(const GameTimer& gt)
 	// Update the constant buffer with the latest worldViewProj matrix.
 	ObjectConstants objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj));
+	objConstants.gTime = gt.TotalTime();
 	mObjectCB->CopyData(0, objConstants);
 
 }
