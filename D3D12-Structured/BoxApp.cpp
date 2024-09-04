@@ -61,16 +61,25 @@ void BoxApp::Update(const GameTimer& gt)
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 	DirectX::XMStoreFloat4x4(&mView, view);
-
-	DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&mWorld); //worldmatrix of box
 	DirectX::XMMATRIX proj = DirectX::XMLoadFloat4x4(&mProj);
-	DirectX::XMMATRIX worldViewProj = world * view * proj;
+
+	//worldviewproj-box
+	mWorld_box.m[3][0] = -1.0f;
+	//mWorld_box.m[3][1] = -5.0f;
+	/*mWorld_box.m[0][3] = -5.0f;
+	mWorld_box.m[1][3] = -5.0f;*/
+	DirectX::XMMATRIX world_box = DirectX::XMLoadFloat4x4(&mWorld_box); //worldmatrix of box
+	worldViewProj_box = world_box * view * proj;
+
+	//worldviewproj-w
+	DirectX::XMMATRIX world_w = DirectX::XMLoadFloat4x4(&mWorld_w); //worldmatrix of box
+	worldViewProj_w = world_w * view * proj;
 
 	// Update the constant buffer with the latest worldViewProj matrix.
-	ObjectConstants objConstants;
-	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj));
+	/*ObjectConstants objConstants;
+	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_box));
 	objConstants.gTime = gt.TotalTime();
-	mObjectCB->CopyData(0, objConstants);
+	mObjectCB->CopyData(0, objConstants);*/
 
 }
 
@@ -114,9 +123,20 @@ void BoxApp::Draw(const GameTimer& gt)
 
 	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-	mCommandList->DrawIndexedInstanced(
-		mBoxGeo->DrawArgs["box"].IndexCount,
-		1, 0, 0, 0);
+	
+	for (auto& [name, currentGeometry] : mBoxGeo->DrawArgs) {
+		ObjectConstants objConstants;
+		objConstants.gTime = gt.TotalTime();
+		if (name == "box") {
+			DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_box));
+		}
+		else if(name == "W"){
+			DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_w));
+		}
+		mObjectCB->CopyData(0, objConstants); //constant buffer
+		mCommandList->DrawIndexedInstanced(currentGeometry.IndexCount, 1, currentGeometry.StartIndexLocation, currentGeometry.BaseVertexLocation, 0);
+	}
+
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER res_bar2 = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -269,7 +289,15 @@ void BoxApp::BuildShaderAndInputLayout()
 
 void BoxApp::BuildboxGeometry()
 {
-	std::array<Vertex, 8> vertices =
+	UINT geoBox_Num_of_Vertices = 8;
+	UINT geoBox_Num_of_Indices = 36;
+
+	UINT geoW__Num_of_Vertices = 10;
+	UINT geoW__Num_of_Indices = 24;
+
+
+
+	std::array<Vertex, 18> vertices =
 	{
 		Vertex({DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::White)}),
 		Vertex({DirectX::XMFLOAT3(-1.0f, 1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
@@ -279,9 +307,20 @@ void BoxApp::BuildboxGeometry()
 		Vertex({DirectX::XMFLOAT3(-1.0f, 1.0f, 1.0f), DirectX::XMFLOAT4(DirectX::Colors::Yellow)}),
 		Vertex({DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
 		Vertex({DirectX::XMFLOAT3(1.0f, -1.0f, 1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
+		//---------------W--------------------------//
+		Vertex({DirectX::XMFLOAT3(-0.3f, -0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::White)}),
+		Vertex({DirectX::XMFLOAT3(-0.3f, -0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+		Vertex({DirectX::XMFLOAT3(-0.6f, 0.6f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Vertex({DirectX::XMFLOAT3(-0.6f, 0.6f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+		Vertex({DirectX::XMFLOAT3(0.0f, 0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
+		Vertex({DirectX::XMFLOAT3(0.0f, 0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
+		Vertex({DirectX::XMFLOAT3(0.3f, -0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
+		Vertex({DirectX::XMFLOAT3(0.3f, -0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Salmon)}),
+		Vertex({DirectX::XMFLOAT3(0.6f, 0.6f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Bisque)}),
+		Vertex({DirectX::XMFLOAT3(0.6f, 0.6f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Purple)})
 	};
 
-	std::array<std::uint16_t, 36> indices =
+	std::array<std::uint16_t, 60> indices =
 	{
 		// front face
 		0, 1, 2,
@@ -305,7 +344,17 @@ void BoxApp::BuildboxGeometry()
 
 		// bottom face
 		4, 0, 3,
-		4, 3, 7
+		4, 3, 7,
+		//---------------------W--------------------------//
+
+		0, 1, 3,
+		3, 2, 0,
+		0, 1, 4,
+		4, 1, 5,
+		7, 4, 5,
+		7, 4, 6,
+		7, 9, 8,
+		8, 6, 7
 	};
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -332,12 +381,19 @@ void BoxApp::BuildboxGeometry()
 	mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	mBoxGeo->IndexBufferByteSize = ibBytesSize;
 
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
+	SubmeshGeometry submesh_box;
+	submesh_box.IndexCount = geoBox_Num_of_Indices;
+	submesh_box.StartIndexLocation = 0;
+	submesh_box.BaseVertexLocation = 0;
 
-	mBoxGeo->DrawArgs["box"] = submesh;
+	mBoxGeo->DrawArgs["box"] = submesh_box;
+
+	SubmeshGeometry submesh_w;
+	submesh_w.IndexCount = geoW__Num_of_Indices;
+	submesh_w.StartIndexLocation = geoBox_Num_of_Indices;
+	submesh_w.BaseVertexLocation = geoBox_Num_of_Vertices;
+
+	mBoxGeo->DrawArgs["W"] = submesh_w;
 }
 
 void BoxApp::BuildPSO()
@@ -356,7 +412,11 @@ void BoxApp::BuildPSO()
 		reinterpret_cast<BYTE*>(mpsByteCode->GetBufferPointer()),
 		mpsByteCode->GetBufferSize()
 	};
-	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	D3D12_RASTERIZER_DESC rast_desc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	rast_desc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rast_desc.CullMode = D3D12_CULL_MODE_NONE;
+
+	psoDesc.RasterizerState = rast_desc;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
