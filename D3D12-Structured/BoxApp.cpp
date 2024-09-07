@@ -69,13 +69,18 @@ void BoxApp::Update(const GameTimer& gt)
 	mWorld_box.m[1][1] = 0.6f;
 	mWorld_box.m[2][2] = 0.6f;
 
-	mWorld_w.m[3][0] = -1.5f;
-	
-	
 	DirectX::XMMATRIX world_box = DirectX::XMLoadFloat4x4(&mWorld_box); //worldmatrix of box
 	worldViewProj_box = world_box * view * proj;
 
-	//worldviewproj-w
+	//rotation along y axis
+	w_rotY_var += gt.DeltaTime();
+	mWorld_w.m[0][0] = cos(w_rotY_var);
+	mWorld_w.m[0][2] = -sin(w_rotY_var);
+	mWorld_w.m[2][0] = sin(w_rotY_var);
+	mWorld_w.m[2][2] = cos(w_rotY_var);
+
+	mWorld_w.m[3][0] = -1.5f;
+
 	DirectX::XMMATRIX world_w = DirectX::XMLoadFloat4x4(&mWorld_w); //worldmatrix of box
 	worldViewProj_w = world_w * view * proj;
 
