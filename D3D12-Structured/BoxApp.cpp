@@ -64,10 +64,14 @@ void BoxApp::Update(const GameTimer& gt)
 	DirectX::XMMATRIX proj = DirectX::XMLoadFloat4x4(&mProj);
 
 	//worldviewproj-box
-	mWorld_box.m[3][0] = -1.0f;
-	//mWorld_box.m[3][1] = -5.0f;
-	/*mWorld_box.m[0][3] = -5.0f;
-	mWorld_box.m[1][3] = -5.0f;*/
+	mWorld_box.m[3][0] = 1.0f; //world pos, translation
+	mWorld_box.m[0][0] = 0.6f; //scaling
+	mWorld_box.m[1][1] = 0.6f;
+	mWorld_box.m[2][2] = 0.6f;
+
+	mWorld_w.m[3][0] = -1.5f;
+	
+	
 	DirectX::XMMATRIX world_box = DirectX::XMLoadFloat4x4(&mWorld_box); //worldmatrix of box
 	worldViewProj_box = world_box * view * proj;
 
@@ -76,11 +80,15 @@ void BoxApp::Update(const GameTimer& gt)
 	worldViewProj_w = world_w * view * proj;
 
 	// Update the constant buffer with the latest worldViewProj matrix.
-	/*ObjectConstants objConstants;
+	ObjectConstants objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_box));
 	objConstants.gTime = gt.TotalTime();
-	mObjectCB->CopyData(0, objConstants);*/
+	mObjectCB->CopyData(0, objConstants);
 
+	ObjectConstants objConstants2;
+	DirectX::XMStoreFloat4x4(&objConstants2.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_w));
+	objConstants2.gTime = gt.TotalTime();
+	mObjectCB->CopyData(1, objConstants2);
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -121,22 +129,23 @@ void BoxApp::Draw(const GameTimer& gt)
 	mCommandList->IASetIndexBuffer(&index_view);
 	mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE cbv(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	/*cbv.Offset(0, mCbvSrvUavDescriptorSize);
+	mCommandList->SetGraphicsRootDescriptorTable(0, cbv);*/
 
-	
 	for (auto& [name, currentGeometry] : mBoxGeo->DrawArgs) {
-		ObjectConstants objConstants;
-		objConstants.gTime = gt.TotalTime();
-		if (name == "box") {
-			DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_box));
+
+		if (name == "box"){
+			cbv.Offset(0, mCbvSrvUavDescriptorSize);
+			mCommandList->SetGraphicsRootDescriptorTable(0, cbv);
 		}
-		else if(name == "W"){
-			DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_w));
+		else if (name == "W") {
+			cbv.Offset(1, mCbvSrvUavDescriptorSize);
+			mCommandList->SetGraphicsRootDescriptorTable(0, cbv);
 		}
-		mObjectCB->CopyData(0, objConstants); //constant buffer
+		
 		mCommandList->DrawIndexedInstanced(currentGeometry.IndexCount, 1, currentGeometry.StartIndexLocation, currentGeometry.BaseVertexLocation, 0);
 	}
-
 
 	// Indicate a state transition on the resource usage.
 	D3D12_RESOURCE_BARRIER res_bar2 = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -206,7 +215,7 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
 void BoxApp::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.NumDescriptors = 2;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -215,10 +224,11 @@ void BoxApp::BuildDescriptorHeaps()
 
 void BoxApp::BuildConstantBuffers()
 {
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 1, true);
+	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 2, true);
 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
+	// Address to start of the buffer (0th constant buffer).
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
 
 	// Offset to the ith object constant buffer in the buffer.
@@ -232,6 +242,22 @@ void BoxApp::BuildConstantBuffers()
 	md3dDevice->CreateConstantBufferView(
 		&cbvDesc,
 		mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+
+
+	cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
+	int wCBufIndex = 1;
+	cbAddress += wCBufIndex * objCBByteSize;
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc2;
+	cbvDesc2.BufferLocation = cbAddress;
+	cbvDesc2.SizeInBytes = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbv(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+	cbv.Offset(1, mCbvSrvUavDescriptorSize);
+
+	md3dDevice->CreateConstantBufferView(
+		&cbvDesc2,
+		cbv);  
 }
 
 void BoxApp::BuildRootSignature()
@@ -241,15 +267,15 @@ void BoxApp::BuildRootSignature()
 	// programs expect.  If we think of the shader programs as a function, and
 	// the input resources as function parameters, then the root signature can be
 	// thought of as defining the function signature.  
-
-	// Root parameter can be a table, root descriptor or root constants.
-	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
-
-	// Create a single descriptor table of CBVs.
+	
+	// Create a double descriptor table of CBVs.
 	CD3DX12_DESCRIPTOR_RANGE cbvTable;
 	cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);
-
+	
+	// Root parameter can be a table, root descriptor or root constants.
+	CD3DX12_ROOT_PARAMETER slotRootParameter[1];
+	slotRootParameter[0].InitAsDescriptorTable(1, &cbvTable);  //***
+	
 	// A root signature is an array of root parameters.
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(1, slotRootParameter, 0, nullptr,
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
