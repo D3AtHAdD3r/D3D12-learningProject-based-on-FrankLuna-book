@@ -58,10 +58,13 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
 
-	DirectX::XMFLOAT4X4 mWorld_box = MathHelper::Identity4x4();
+	/*DirectX::XMFLOAT4X4 mWorld_box = MathHelper::Identity4x4();
 	DirectX::XMMATRIX worldViewProj_box;
 	DirectX::XMFLOAT4X4 mWorld_w = MathHelper::Identity4x4();
-	DirectX::XMMATRIX worldViewProj_w;
+	DirectX::XMMATRIX worldViewProj_w;*/
+
+	DirectX::XMFLOAT4X4 mWorld_WAG = MathHelper::Identity4x4();
+	DirectX::XMMATRIX worldViewProj_WAG;
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
