@@ -91,3 +91,34 @@ std::array<std::uint16_t, 18> indices_A =
 
 };
 
+
+//----------------------------------------------------------------------------------------//
+UINT geo_W_Num_of_Vertices = 10;
+UINT geo_W_Num_of_Indices = 24;
+
+std::array<Vertex, 10> vertices_W =
+{
+	Vertex({DirectX::XMFLOAT3(-0.3f, -0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::White)}),
+	Vertex({DirectX::XMFLOAT3(-0.3f, -0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+	Vertex({DirectX::XMFLOAT3(-0.6f, 0.6f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+	Vertex({DirectX::XMFLOAT3(-0.6f, 0.6f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+	Vertex({DirectX::XMFLOAT3(0.0f, 0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
+	Vertex({DirectX::XMFLOAT3(0.0f, 0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
+	Vertex({DirectX::XMFLOAT3(0.3f, -0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
+	Vertex({DirectX::XMFLOAT3(0.3f, -0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Salmon)}),
+	Vertex({DirectX::XMFLOAT3(0.6f, 0.6f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Bisque)}),
+	Vertex({DirectX::XMFLOAT3(0.6f, 0.6f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Purple)})
+};
+
+
+std::array<std::uint16_t, 24> indices_W =
+{
+	0, 1, 3,
+	3, 2, 0,
+	0, 1, 4,
+	4, 1, 5,
+	7, 4, 5,
+	7, 4, 6,
+	7, 9, 8,
+	8, 6, 7
+};

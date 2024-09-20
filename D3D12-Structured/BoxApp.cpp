@@ -84,20 +84,72 @@ void BoxApp::Update(const GameTimer& gt)
 	//DirectX::XMMATRIX world_w = DirectX::XMLoadFloat4x4(&mWorld_w); //worldmatrix of box
 	//worldViewProj_w = world_w * view * proj;
 
-	//WAG
-	DirectX::XMMATRIX world_WAG = DirectX::XMLoadFloat4x4(&mWorld_WAG);  //worldmatrix of WAG
-	worldViewProj_WAG = world_WAG * view * proj;
+	w_rotY_var += gt.DeltaTime();
+
+	//W
+	//Rotation
+	mWorld_W.m[0][0] = cos(w_rotY_var);
+	mWorld_W.m[0][2] = -sin(w_rotY_var);
+	mWorld_W.m[2][0] = sin(w_rotY_var);
+	mWorld_W.m[2][2] = cos(w_rotY_var);
+	//translation
+	mWorld_W.m[3][0] = -1.5f;	
+	mWorld_W.m[3][2] =  2.0f;	
+	DirectX::XMMATRIX world_W = DirectX::XMLoadFloat4x4(&mWorld_W);  //worldmatrix of WAG
+	worldViewProj_W = world_W * view * proj;
+
+	//A
+	//Scale
+	mWorld_A.m[0][0] = 0.5f;
+	mWorld_A.m[1][1] = 0.5f;
+	mWorld_A.m[2][2] = 0.5f;
+	//Rotation
+	mWorld_A.m[0][0] = cos(w_rotY_var);
+	mWorld_A.m[0][2] = -sin(w_rotY_var);
+	mWorld_A.m[2][0] = sin(w_rotY_var);
+	mWorld_A.m[2][2] = cos(w_rotY_var);
+	//Translation
+	mWorld_A.m[3][0] = 0.0f;
+	mWorld_A.m[3][2] = 2.0f;
+	DirectX::XMMATRIX world_A = DirectX::XMLoadFloat4x4(&mWorld_A);  //worldmatrix of WAG
+	worldViewProj_A = world_A * view * proj;
+
+	//G
+	//Scale
+	mWorld_G.m[0][0] = 0.6f;
+	mWorld_G.m[1][1] = 0.6f;
+	mWorld_G.m[2][2] = 0.6f;
+	//Rotation
+	mWorld_G.m[0][0] = cos(w_rotY_var);
+	mWorld_G.m[0][2] = -sin(w_rotY_var);
+	mWorld_G.m[2][0] = sin(w_rotY_var);
+	mWorld_G.m[2][2] = cos(w_rotY_var);
+	//Translation
+	mWorld_G.m[3][0] = 1.6f;
+	mWorld_G.m[3][2] = 2.0f;
+	DirectX::XMMATRIX world_G = DirectX::XMLoadFloat4x4(&mWorld_G);  //worldmatrix of WAG
+	worldViewProj_G = world_G * view * proj;
 
 	// Update the constant buffer with the latest worldViewProj matrix.
+	//W-ConstantBuffer
 	ObjectConstants objConstants;
-	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_WAG));
+	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_W));
 	objConstants.gTime = gt.TotalTime();
 	mObjectCB->CopyData(0, objConstants);
 
-	/*ObjectConstants objConstants2;
-	DirectX::XMStoreFloat4x4(&objConstants2.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_w));
+	//A-ConstantBuffer
+	ObjectConstants objConstants2;
+	DirectX::XMStoreFloat4x4(&objConstants2.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_A));
 	objConstants2.gTime = gt.TotalTime();
-	mObjectCB->CopyData(1, objConstants2);*/
+	mObjectCB->CopyData(1, objConstants2);
+
+	//G-ConstantBuffer
+	ObjectConstants objConstants3;
+	DirectX::XMStoreFloat4x4(&objConstants3.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_G));
+	objConstants3.gTime = gt.TotalTime();
+	mObjectCB->CopyData(2, objConstants3);
+
+	
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -144,15 +196,20 @@ void BoxApp::Draw(const GameTimer& gt)
 
 	for (auto& [name, currentGeometry] : mBoxGeo->DrawArgs) {
 
-		if (name == "WAG"){
+		CD3DX12_GPU_DESCRIPTOR_HANDLE cbv(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+
+		if (name == "W"){
 			cbv.Offset(0, mCbvSrvUavDescriptorSize);
 			mCommandList->SetGraphicsRootDescriptorTable(0, cbv);
 		}
-		else if (name == "W") {
+		else if (name == "A") {
 			cbv.Offset(1, mCbvSrvUavDescriptorSize);
 			mCommandList->SetGraphicsRootDescriptorTable(0, cbv);
 		}
-		
+		else if (name == "G") {
+			cbv.Offset(2, mCbvSrvUavDescriptorSize);
+			mCommandList->SetGraphicsRootDescriptorTable(0, cbv);
+		}
 		mCommandList->DrawIndexedInstanced(currentGeometry.IndexCount, 1, currentGeometry.StartIndexLocation, currentGeometry.BaseVertexLocation, 0);
 	}
 
@@ -224,7 +281,7 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
 void BoxApp::BuildDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 2;
+	cbvHeapDesc.NumDescriptors = 3;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -233,7 +290,7 @@ void BoxApp::BuildDescriptorHeaps()
 
 void BoxApp::BuildConstantBuffers()
 {
-	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 2, true);
+	mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 3, true);
 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
@@ -252,6 +309,7 @@ void BoxApp::BuildConstantBuffers()
 		&cbvDesc,
 		mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 
+	//--------2nd buffer------------//
 
 	cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
 	int wCBufIndex = 1;
@@ -267,6 +325,21 @@ void BoxApp::BuildConstantBuffers()
 	md3dDevice->CreateConstantBufferView(
 		&cbvDesc2,
 		cbv);  
+
+	//-----------3rd buffer-------------//
+	cbAddress = mObjectCB->Resource()->GetGPUVirtualAddress();
+	int wCBufIndex2 = 2;
+	cbAddress += wCBufIndex2 * objCBByteSize;
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc3;
+	cbvDesc3.BufferLocation = cbAddress;
+	cbvDesc3.SizeInBytes = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbv2(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+	cbv2.Offset(2, mCbvSrvUavDescriptorSize);
+	md3dDevice->CreateConstantBufferView(
+		&cbvDesc3,
+		cbv2);
 }
 
 void BoxApp::BuildRootSignature()
@@ -330,42 +403,92 @@ void BoxApp::BuildboxGeometry()
 	UINT geoW__Num_of_Vertices = 10;
 	UINT geoW__Num_of_Indices = 24;*/
 
-	UINT geoWAG_Num_of_Vertices = 10;
-	UINT geoWAG_Num_of_Indices = 18;
+	UINT geo_W_Num_of_Vertices = 10;
+	UINT geo_W_Num_of_Indices = 24;
+
+	UINT geo_A_Num_of_Vertices = 10;
+	UINT geo_A_Num_of_Indices = 18;
+
+	UINT geo_G_Num_of_Vertices = 14;
+	UINT geo_G_Num_of_Indices = 36;
 
 
-	std::array<Vertex, 10> vertices =
+	UINT geoWAG_Num_of_Vertices = geo_W_Num_of_Vertices + geo_A_Num_of_Vertices + geo_G_Num_of_Vertices;
+	UINT geoWAG_Num_of_Indices = geo_W_Num_of_Indices + geo_A_Num_of_Indices + geo_G_Num_of_Indices;
+
+
+	std::array<Vertex, 34> vertices =
 	{
-
+		//W
+		Vertex({DirectX::XMFLOAT3(-0.3f, -0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::White)}),
+		Vertex({DirectX::XMFLOAT3(-0.3f, -0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+		Vertex({DirectX::XMFLOAT3(-0.6f, 0.6f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Vertex({DirectX::XMFLOAT3(-0.6f, 0.6f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+		Vertex({DirectX::XMFLOAT3(0.0f, 0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
+		Vertex({DirectX::XMFLOAT3(0.0f, 0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
+		Vertex({DirectX::XMFLOAT3(0.3f, -0.3f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
+		Vertex({DirectX::XMFLOAT3(0.3f, -0.3f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Salmon)}),
+		Vertex({DirectX::XMFLOAT3(0.6f, 0.6f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Bisque)}),
+		Vertex({DirectX::XMFLOAT3(0.6f, 0.6f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Purple)}),
+		//A
 		Vertex({DirectX::XMFLOAT3(0,1.0f,0), DirectX::XMFLOAT4(DirectX::Colors::White)}),
-		Vertex({DirectX::XMFLOAT3(0,1.0f,0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
-
-		Vertex({DirectX::XMFLOAT3(-1.0f, -1.0f, 0), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
-		Vertex({DirectX::XMFLOAT3(-1.0f, -1.0f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Green)}),
-
-		Vertex({DirectX::XMFLOAT3(1.0f, -1.0f, 0), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
-		Vertex({DirectX::XMFLOAT3(1.0f, -1.0f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Yellow)}),
-
-		Vertex({DirectX::XMFLOAT3(0.5f, 0, 0), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
-		Vertex({DirectX::XMFLOAT3(0.5f, 0, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
-
-	
-		Vertex({DirectX::XMFLOAT3(-0.5f, 0, 0), DirectX::XMFLOAT4(DirectX::Colors::White)}),
-		Vertex({DirectX::XMFLOAT3(-0.5f, 0, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
-
+		Vertex({DirectX::XMFLOAT3(0,1.0f,0.3f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+		Vertex({DirectX::XMFLOAT3(-0.6f, -1.0f, 0), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Vertex({DirectX::XMFLOAT3(-0.6f, -1.0f, 0.3f), DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+		Vertex({DirectX::XMFLOAT3(0.6f, -1.0f, 0), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
+		Vertex({DirectX::XMFLOAT3(0.6f, -1.0f, 0.3f), DirectX::XMFLOAT4(DirectX::Colors::Yellow)}),
+		Vertex({DirectX::XMFLOAT3(0.3f, 0, 0), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
+		Vertex({DirectX::XMFLOAT3(0.3f, 0, 0.3f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
+		Vertex({DirectX::XMFLOAT3(-0.3f, 0, 0), DirectX::XMFLOAT4(DirectX::Colors::White)}),
+		Vertex({DirectX::XMFLOAT3(-0.3f, 0, 0.3f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+		//G
+		Vertex({DirectX::XMFLOAT3(0, 0.8f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::White)}),
+		Vertex({DirectX::XMFLOAT3(0, 0.8f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+		Vertex({DirectX::XMFLOAT3(-0.75f, 0.8f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Vertex({DirectX::XMFLOAT3(-0.75f, 0.8f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Green)}),
+		Vertex({DirectX::XMFLOAT3(-1.0f, 0.0f, 0), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),
+		Vertex({DirectX::XMFLOAT3(-1.0f, 0.0f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Yellow)}),
+		Vertex({DirectX::XMFLOAT3(-0.7f, -0.8f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),
+		Vertex({DirectX::XMFLOAT3(-0.7f, -0.8f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Magenta)}),
+		Vertex({DirectX::XMFLOAT3(0, -0.8f, 0.0f), DirectX::XMFLOAT4(DirectX::Colors::White)}),
+		Vertex({DirectX::XMFLOAT3(0, -0.8f, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Black)}),
+		Vertex({DirectX::XMFLOAT3(0, 0, 0), DirectX::XMFLOAT4(DirectX::Colors::Red)}),
+		Vertex({DirectX::XMFLOAT3(0, 0, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Green)}), //11
+		Vertex({DirectX::XMFLOAT3(-0.5f, 0, 0), DirectX::XMFLOAT4(DirectX::Colors::Blue)}),  //12
+		Vertex({DirectX::XMFLOAT3(-0.5f, 0, 0.5f), DirectX::XMFLOAT4(DirectX::Colors::Cyan)}),  //13
 	};
 
-	std::array<std::uint16_t, 18> indices =
+	std::array<std::uint16_t, 78> indices =
 	{
+		//W
+		0, 1, 3,
+		3, 2, 0,
+		0, 1, 4,
+		4, 1, 5,
+		7, 4, 5,
+		7, 4, 6,
+		7, 9, 8,
+		8, 6, 7,
+		//A
 		0, 2, 1,
-		2, 3, 1,
-
+		2, 3, 1,					
 		4, 1, 5,
 		4, 0, 1,
-
 		6,8, 7,
-		8,9, 7
-
+		8,9, 7,
+		//G
+		0, 2, 1,
+		2, 3, 1,
+		2, 4, 3,
+		4, 5, 3,
+		4, 6, 7,
+		7, 5, 4,
+		6, 8, 7,
+		8, 9, 7,
+		8, 11, 9,
+		8, 10, 11,
+		10, 12, 11,
+		12, 13, 11
 	};
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -392,12 +515,29 @@ void BoxApp::BuildboxGeometry()
 	mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	mBoxGeo->IndexBufferByteSize = ibBytesSize;
 
+	SubmeshGeometry submesh_W;
+	submesh_W.IndexCount = geo_W_Num_of_Indices;
+	submesh_W.StartIndexLocation = 0;
+	submesh_W.BaseVertexLocation = 0;
+	mBoxGeo->DrawArgs["W"] = submesh_W;
 
-	SubmeshGeometry submesh_WAG;
+	SubmeshGeometry submesh_A;
+	submesh_A.IndexCount = geo_A_Num_of_Indices;
+	submesh_A.StartIndexLocation = submesh_W.StartIndexLocation + geo_W_Num_of_Indices;
+	submesh_A.BaseVertexLocation = submesh_W.BaseVertexLocation + geo_W_Num_of_Vertices;
+	mBoxGeo->DrawArgs["A"] = submesh_A;
+
+	SubmeshGeometry submesh_G;
+	submesh_G.IndexCount = geo_G_Num_of_Indices;
+	submesh_G.StartIndexLocation = submesh_A.StartIndexLocation + geo_A_Num_of_Indices;
+	submesh_G.BaseVertexLocation = submesh_A.BaseVertexLocation + geo_W_Num_of_Vertices;
+	mBoxGeo->DrawArgs["G"] = submesh_G;
+
+	/*SubmeshGeometry submesh_WAG;
 	submesh_WAG.IndexCount = geoWAG_Num_of_Indices;
 	submesh_WAG.StartIndexLocation = 0;
 	submesh_WAG.BaseVertexLocation = 0;
-	mBoxGeo->DrawArgs["WAG"] = submesh_WAG;
+	mBoxGeo->DrawArgs["WAG"] = submesh_WAG;*/
 
 	/*SubmeshGeometry submesh_box;
 	submesh_box.IndexCount = geoBox_Num_of_Indices;
