@@ -78,11 +78,13 @@
       <ConformanceMode>true</ConformanceMode>
       <ControlFlowGuard>false</ControlFlowGuard>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <AdditionalIncludeDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dcompiler.lib;fmodL_vc.lib;fmodstudioL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Libraries x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -97,13 +99,15 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <ControlFlowGuard>false</ControlFlowGuard>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <AdditionalIncludeDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dcompiler.lib;fmodL_vc.lib;fmodstudioL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Libraries x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -115,11 +119,13 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ControlFlowGuard>false</ControlFlowGuard>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <AdditionalIncludeDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dcompiler.lib;fmodL_vc.lib;fmodstudioL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Libraries x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,13 +140,15 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <ControlFlowGuard>false</ControlFlowGuard>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <AdditionalIncludeDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3dcompiler.lib;fmodL_vc.lib;fmodstudioL_vc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\WorkSpace\Hardware3D\Hardware 3D Programming\DX12 Projects\TestBed\D3D12-Structured\Dependecies\FMOD-Audio-Engine-master\Libraries x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

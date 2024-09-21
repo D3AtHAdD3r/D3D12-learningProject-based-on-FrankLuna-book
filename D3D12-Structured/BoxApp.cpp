@@ -2,6 +2,7 @@
 #include <DirectXColors.h>
 #include<array>
 #include<d3dcompiler.h>
+#include<iostream>
 
 BoxApp::BoxApp(HINSTANCE hInstance)
 	: D3DApp(hInstance)
@@ -35,6 +36,9 @@ bool BoxApp::Initialize()
 	// Wait until initialization is complete.
 	FlushCommandQueue();
 
+	int res = createAndInit_Fmod();
+	if (res == -1) return false;
+
 	return true;
 }
 
@@ -49,6 +53,8 @@ void BoxApp::OnResize()
 
 void BoxApp::Update(const GameTimer& gt)
 {
+	update_Fmod();
+
 	// Convert Spherical to Cartesian coordinates.
 	float x = mRadius * sinf(mPhi) * cosf(mTheta);
 	float z = mRadius * sinf(mPhi) * sinf(mTheta);
@@ -63,30 +69,28 @@ void BoxApp::Update(const GameTimer& gt)
 	DirectX::XMStoreFloat4x4(&mView, view);
 	DirectX::XMMATRIX proj = DirectX::XMLoadFloat4x4(&mProj);
 
-	////worldviewproj-box
-	//mWorld_box.m[3][0] = 1.0f; //world pos, translation
-	//mWorld_box.m[0][0] = 0.6f; //scaling
-	//mWorld_box.m[1][1] = 0.6f;
-	//mWorld_box.m[2][2] = 0.6f;
 
-	//DirectX::XMMATRIX world_box = DirectX::XMLoadFloat4x4(&mWorld_box); //worldmatrix of box
-	//worldViewProj_box = world_box * view * proj;
-
-	////rotation along y axis
 	//w_rotY_var += gt.DeltaTime();
-	//mWorld_w.m[0][0] = cos(w_rotY_var);
-	//mWorld_w.m[0][2] = -sin(w_rotY_var);
-	//mWorld_w.m[2][0] = sin(w_rotY_var);
-	//mWorld_w.m[2][2] = cos(w_rotY_var);
+	/*if (beatIntensity > 2.0f) {
+		w_rotY_var -= (gt.DeltaTime() * beatIntensity);
+	}
+	else {
+		w_rotY_var += (gt.DeltaTime() * beatIntensity);
+	}*/
+	if (beatIntensity > 2) beatIntensity++;
+	w_rotY_var += (gt.DeltaTime() * beatIntensity);
+	float scaleVar = 1/*beatIntensity * 0.05f*/;
 
-	//mWorld_w.m[3][0] = -1.5f;
-
-	//DirectX::XMMATRIX world_w = DirectX::XMLoadFloat4x4(&mWorld_w); //worldmatrix of box
-	//worldViewProj_w = world_w * view * proj;
-
-	w_rotY_var += gt.DeltaTime();
+	if (beatIntensity > 1) 1.3;
+	if (beatIntensity > 1.5f) 1.4;
+	if (beatIntensity > 1.7f) 1.5;
+	//do that in reverse too , so to look lerping
 
 	//W
+	//scale
+	mWorld_W.m[0][0] = scaleVar;
+	mWorld_W.m[1][1] = scaleVar;
+	mWorld_W.m[2][2] = scaleVar;
 	//Rotation
 	mWorld_W.m[0][0] = cos(w_rotY_var);
 	mWorld_W.m[0][2] = -sin(w_rotY_var);
@@ -100,9 +104,9 @@ void BoxApp::Update(const GameTimer& gt)
 
 	//A
 	//Scale
-	mWorld_A.m[0][0] = 0.5f;
-	mWorld_A.m[1][1] = 0.5f;
-	mWorld_A.m[2][2] = 0.5f;
+	mWorld_A.m[0][0] = 0.5f * scaleVar;
+	mWorld_A.m[1][1] = 0.5f * scaleVar;
+	mWorld_A.m[2][2] = 0.5f * scaleVar;
 	//Rotation
 	mWorld_A.m[0][0] = cos(w_rotY_var);
 	mWorld_A.m[0][2] = -sin(w_rotY_var);
@@ -116,9 +120,9 @@ void BoxApp::Update(const GameTimer& gt)
 
 	//G
 	//Scale
-	mWorld_G.m[0][0] = 0.6f;
-	mWorld_G.m[1][1] = 0.6f;
-	mWorld_G.m[2][2] = 0.6f;
+	mWorld_G.m[0][0] = 0.6f * scaleVar;
+	mWorld_G.m[1][1] = 0.6f * scaleVar;
+	mWorld_G.m[2][2] = 0.6f * scaleVar;
 	//Rotation
 	mWorld_G.m[0][0] = cos(w_rotY_var);
 	mWorld_G.m[0][2] = -sin(w_rotY_var);
@@ -134,19 +138,22 @@ void BoxApp::Update(const GameTimer& gt)
 	//W-ConstantBuffer
 	ObjectConstants objConstants;
 	DirectX::XMStoreFloat4x4(&objConstants.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_W));
-	objConstants.gTime = gt.TotalTime();
+	//objConstants.gTime = gt.TotalTime();
+	objConstants.gTime = beatIntensity;
 	mObjectCB->CopyData(0, objConstants);
 
 	//A-ConstantBuffer
 	ObjectConstants objConstants2;
 	DirectX::XMStoreFloat4x4(&objConstants2.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_A));
-	objConstants2.gTime = gt.TotalTime();
+	//objConstants2.gTime = gt.TotalTime();
+	objConstants2.gTime = beatIntensity;
 	mObjectCB->CopyData(1, objConstants2);
 
 	//G-ConstantBuffer
 	ObjectConstants objConstants3;
 	DirectX::XMStoreFloat4x4(&objConstants3.WorldViewProj, DirectX::XMMatrixTranspose(worldViewProj_G));
-	objConstants3.gTime = gt.TotalTime();
+	//objConstants3.gTime = gt.TotalTime();
+	objConstants3.gTime = beatIntensity;
 	mObjectCB->CopyData(2, objConstants3);
 
 	
@@ -587,4 +594,79 @@ void BoxApp::BuildPSO()
 
 
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&mPSO)));
+}
+
+int BoxApp::createAndInit_Fmod()
+{
+	// Create FMOD system
+	result = FMOD::System_Create(&system);
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+
+	// Initialize FMOD system
+	result = system->getVersion(&version);
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+
+	result = system->init(32, FMOD_INIT_NORMAL, 0);
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+
+	// Load sound
+	result = system->createSound("C:\\Users\\PC\\Desktop\\s.mp3", FMOD_DEFAULT, 0, &sound);
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+
+	// Play sound
+	result = system->playSound(sound, 0, false, &channel);
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+
+	FMOD::DSP* dsp = nullptr;
+	result = system->createDSPByType(FMOD_DSP_TYPE_FFT, &dsp);
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+
+	result = channel->addDSP(0, dsp);
+
+	if (result != FMOD_OK) {
+		std::cerr << "FMOD error! " << result << std::endl;
+		return -1;
+	}
+}
+
+void BoxApp::update_Fmod()
+{
+	system->update();
+
+	if (channel) {
+		FMOD::DSP* dsp = nullptr;
+		channel->getDSP(FMOD_CHANNELCONTROL_DSP_HEAD, &dsp);
+
+		if (dsp) {
+			FMOD_DSP_PARAMETER_FFT* fft = nullptr;
+			result = dsp->getParameterData(FMOD_DSP_FFT_SPECTRUMDATA, (void**)&fft, 0, 0, 0);
+			if (result == FMOD_OK && fft) {
+				// Analyze FFT data to determine beat intensity
+				beatIntensity = 0.0f;
+				for (int i = 0; i < fft->length; ++i) {
+					beatIntensity += fft->spectrum[0][i];
+				}
+
+				//std::cout << "Beat Intensity: " << beatIntensity << std::endl;
+			}
+		}
+	}
 }

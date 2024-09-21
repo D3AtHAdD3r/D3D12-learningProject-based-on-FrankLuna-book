@@ -2,6 +2,7 @@
 #include"MathHelper.h"
 #include"UploadBuffer.h"
 #include <memory>
+#include<fmod.hpp>
 
 struct Vertex
 {
@@ -78,4 +79,17 @@ private:
 	float w_rotY_var = 0;
 
 	POINT mLastMousePos;
+
+public:
+	//Fmod
+	FMOD::System* system;
+	FMOD::Sound* sound;
+	FMOD::Channel* channel = 0;
+	FMOD_RESULT result;
+	unsigned int version;
+	float beatIntensity = 0.0f;
+
+	int createAndInit_Fmod();
+	void update_Fmod();
+
 };
