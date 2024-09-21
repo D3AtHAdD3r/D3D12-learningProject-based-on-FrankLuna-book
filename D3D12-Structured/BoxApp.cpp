@@ -619,7 +619,7 @@ int BoxApp::createAndInit_Fmod()
 	}
 
 	// Load sound
-	result = system->createSound("C:\\Users\\PC\\Desktop\\s.mp3", FMOD_DEFAULT, 0, &sound);
+	result = system->createSound("s.mp3", FMOD_DEFAULT, 0, &sound);
 	if (result != FMOD_OK) {
 		std::cerr << "FMOD error! " << result << std::endl;
 		return -1;
